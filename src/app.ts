@@ -10,6 +10,7 @@ import requestLogger from "./middleware/requestLogger";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import authRoutes from "./routes/authRoutes";
 import equipmentRoutes from "./routes/equipmentRoutes";
+import bookingRoutes from "./routes/bookingRoutes";
 
 class App {
   private app: Express;
@@ -102,6 +103,8 @@ class App {
     this.app.use(`/api/${config.apiVersion}/auth`, authRoutes);
 
     this.app.use(`/api/${config.apiVersion}/equipment`, equipmentRoutes);
+
+    this.app.use(`/api/${config.apiVersion}/bookings`, bookingRoutes);
   }
 
   private initializeErrorHandlers(): void {
