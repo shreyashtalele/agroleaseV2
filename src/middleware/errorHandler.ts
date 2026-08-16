@@ -1,21 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 import logger from "../config/logger";
 
-interface ErrorDetails {
-  [key: string]: any;
-}
-
 export class AppError extends Error {
   public statusCode: number;
   public errorCode: string;
-  public details: ErrorDetails | null;
+  public details: any | null;
   public isOperational: boolean;
 
   constructor(
     message: string,
     statusCode: number,
     errorCode: string = "INTERNAL_ERROR",
-    details: ErrorDetails | null = null,
+    details: any | null = null,
   ) {
     super(message);
     this.statusCode = statusCode || 500;
@@ -48,7 +44,7 @@ export const errorHandler = (
   err: any,
   req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ) => {
   const correlationId = (req as any).correlationId || "unknown";
   const log = logger.child(correlationId);
@@ -118,7 +114,7 @@ export const errorHandler = (
 
 export const notFoundHandler = (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ) => {
   const err = new AppError(

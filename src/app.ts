@@ -8,6 +8,7 @@ import config from "./config/config";
 import correlationId from "./middleware/correlationId";
 import requestLogger from "./middleware/requestLogger";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+import authRoutes from "./routes/authRoutes";
 
 class App {
   private app: Express;
@@ -86,10 +87,18 @@ class App {
         res.json({
           message: "Welcome to AgroLease API",
           version: config.apiVersion,
-          endpoints: "Coming soon...",
+          endpoints: {
+            auth: "/api/v1/auth",
+            equipment: "/api/v1/equipment (coming soon)",
+            bookings: "/api/v1/bookings (coming soon)",
+            payments: "/api/v1/payments (coming soon)",
+          },
         });
       },
     );
+
+    // Auth routes
+    this.app.use(`/api/${config.apiVersion}/auth`, authRoutes);
   }
 
   private initializeErrorHandlers(): void {
