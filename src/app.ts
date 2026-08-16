@@ -9,6 +9,7 @@ import correlationId from "./middleware/correlationId";
 import requestLogger from "./middleware/requestLogger";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import authRoutes from "./routes/authRoutes";
+import equipmentRoutes from "./routes/equipmentRoutes";
 
 class App {
   private app: Express;
@@ -99,6 +100,8 @@ class App {
 
     // Auth routes
     this.app.use(`/api/${config.apiVersion}/auth`, authRoutes);
+
+    this.app.use(`/api/${config.apiVersion}/equipment`, equipmentRoutes);
   }
 
   private initializeErrorHandlers(): void {
