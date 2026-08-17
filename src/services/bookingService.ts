@@ -3,6 +3,7 @@ import Equipment from "../models/Equipment";
 import { AppError } from "../middleware/errorHandler";
 import { ERROR_CODES } from "../middleware/errorHandler";
 import mongoose from "mongoose";
+import { NotificationService } from "./notificationService";
 
 interface CreateBookingData {
   equipmentId: string;
@@ -127,6 +128,9 @@ export class BookingService {
       { path: "owner", select: "firstName lastName email phoneNumber" },
     ]);
 
+    // Create notification
+    await NotificationService.notifyBookingCreated(booking);
+
     return booking;
   }
 
@@ -232,6 +236,7 @@ export class BookingService {
       $inc: { quantity: 1 },
     });
 
+    await NotificationService.notifyBookingCancelled(booking, userId);
     return booking;
   }
 
@@ -296,6 +301,8 @@ export class BookingService {
     booking.completedAt = new Date();
 
     await booking.save();
+
+    await NotificationService.notifyBookingCompleted(booking);
 
     return booking;
   }
