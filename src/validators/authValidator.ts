@@ -27,8 +27,8 @@ export const registerValidator = [
     ),
   body("role")
     .optional()
-    .isIn(["farmer", "provider"])
-    .withMessage("Role must be either farmer or provider"),
+    .isIn(["farmer", "provider", "admin"])
+    .withMessage("Role must be farmer, provider, or admin"),
 ];
 
 export const loginValidator = [

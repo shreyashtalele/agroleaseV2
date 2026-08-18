@@ -13,6 +13,7 @@ import equipmentRoutes from "./routes/equipmentRoutes";
 import bookingRoutes from "./routes/bookingRoutes";
 import paymentRoutes from "./routes/paymentRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
+import adminRoutes from "./routes/adminRoutes";
 
 class App {
   private app: Express;
@@ -93,9 +94,11 @@ class App {
           version: config.apiVersion,
           endpoints: {
             auth: "/api/v1/auth",
-            equipment: "/api/v1/equipment (coming soon)",
-            bookings: "/api/v1/bookings (coming soon)",
-            payments: "/api/v1/payments (coming soon)",
+            equipment: "/api/v1/equipment",
+            bookings: "/api/v1/bookings",
+            payments: "/api/v1/payments",
+            notifications: "/api/v1/notifications",
+            admin: "/api/v1/admin",
           },
         });
       },
@@ -104,13 +107,20 @@ class App {
     // Auth routes
     this.app.use(`/api/${config.apiVersion}/auth`, authRoutes);
 
+    // Equipment routes
     this.app.use(`/api/${config.apiVersion}/equipment`, equipmentRoutes);
 
+    // Booking routes
     this.app.use(`/api/${config.apiVersion}/bookings`, bookingRoutes);
 
+    // Payment routes
     this.app.use(`/api/${config.apiVersion}/payments`, paymentRoutes);
 
+    // Notification routes
     this.app.use(`/api/${config.apiVersion}/notifications`, notificationRoutes);
+
+    // Admin routes
+    this.app.use(`/api/${config.apiVersion}/admin`, adminRoutes);
   }
 
   private initializeErrorHandlers(): void {

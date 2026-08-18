@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { validationResult } from "express-validator";
+
 import { NotificationService } from "../services/notificationService";
 import { AppError } from "../middleware/errorHandler";
 import ResponseHandler from "../utils/responseHandler";
