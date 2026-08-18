@@ -271,6 +271,16 @@ export class BookingService {
       $inc: { quantity: -1 },
     });
 
+    // Populate for notification
+    await booking.populate([
+      { path: "equipment", select: "title" },
+      { path: "renter", select: "firstName lastName" },
+      { path: "owner", select: "firstName lastName" },
+    ]);
+
+    // Create notification for confirmation
+    await NotificationService.notifyBookingConfirmed(booking);
+
     return booking;
   }
 
@@ -289,7 +299,7 @@ export class BookingService {
       );
     }
 
-    if (booking.status !== "active") {
+    if (booking.status !== "confirmed" && booking.status !== "active") {
       throw new AppError(
         `Booking cannot be completed (status: ${booking.status})`,
         400,
@@ -301,6 +311,13 @@ export class BookingService {
     booking.completedAt = new Date();
 
     await booking.save();
+
+    // Populate for notification
+    await booking.populate([
+      { path: "equipment", select: "title" },
+      { path: "renter", select: "firstName lastName" },
+      { path: "owner", select: "firstName lastName" },
+    ]);
 
     await NotificationService.notifyBookingCompleted(booking);
 
