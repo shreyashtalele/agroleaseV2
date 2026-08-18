@@ -4,10 +4,12 @@ import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import path from "path";
+import swaggerUi from "swagger-ui-express";
 import config from "./config/config";
 import correlationId from "./middleware/correlationId";
 import requestLogger from "./middleware/requestLogger";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+import { specs } from "./config/swagger";
 import authRoutes from "./routes/authRoutes";
 import equipmentRoutes from "./routes/equipmentRoutes";
 import bookingRoutes from "./routes/bookingRoutes";
@@ -67,6 +69,9 @@ class App {
   }
 
   private initializeRoutes(): void {
+    // Swagger Documentation
+    this.app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
+
     this.app.get("/health", (_req: Request, res: Response) => {
       res.json({
         status: "ok",
@@ -83,6 +88,7 @@ class App {
         status: "running",
         environment: config.env,
         timestamp: new Date().toISOString(),
+        docs: "/api-docs",
       });
     });
 
@@ -99,6 +105,7 @@ class App {
             payments: "/api/v1/payments",
             notifications: "/api/v1/notifications",
             admin: "/api/v1/admin",
+            docs: "/api-docs",
           },
         });
       },
