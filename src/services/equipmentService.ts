@@ -2,6 +2,7 @@ import Equipment, { IEquipment } from "../models/Equipment";
 import { AppError } from "../middleware/errorHandler";
 import { ERROR_CODES } from "../middleware/errorHandler";
 import mongoose from "mongoose";
+import { CacheService, CACHE_TTL } from "./cacheService";
 
 interface CreateEquipmentData {
   title: string;
@@ -102,73 +103,95 @@ export class EquipmentService {
     });
 
     await equipment.save();
+
+    // Invalidate equipment list cache
+    await CacheService.deletePattern("equipment:list:*");
+    await CacheService.delete(CacheService.getCategoriesKey());
+
     return equipment;
   }
 
   static async getEquipmentList(
     options: ListOptions,
   ): Promise<{ data: IEquipment[]; total: number }> {
-    const {
-      page,
-      limit,
-      category,
-      city,
-      state,
-      minPrice,
-      maxPrice,
-      status,
-      search,
-      sort,
-      userId,
-    } = options;
+    const cacheKey = CacheService.getEquipmentListKey(options);
 
-    const query: any = {};
+    return CacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const {
+          page,
+          limit,
+          category,
+          city,
+          state,
+          minPrice,
+          maxPrice,
+          status,
+          search,
+          sort,
+          userId,
+        } = options;
 
-    if (category) query.category = category;
-    if (city) query["location.city"] = { $regex: city, $options: "i" };
-    if (state) query["location.state"] = { $regex: state, $options: "i" };
-    if (status) query.status = status;
-    if (userId) query.owner = new mongoose.Types.ObjectId(userId);
+        const query: any = {};
 
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      query.rentalPricePerDay = {};
-      if (minPrice !== undefined) query.rentalPricePerDay.$gte = minPrice;
-      if (maxPrice !== undefined) query.rentalPricePerDay.$lte = maxPrice;
-    }
+        if (category) query.category = category;
+        if (city) query["location.city"] = { $regex: city, $options: "i" };
+        if (state) query["location.state"] = { $regex: state, $options: "i" };
+        if (status) query.status = status;
+        if (userId) query.owner = new mongoose.Types.ObjectId(userId);
 
-    if (search) {
-      query.$text = { $search: search };
-    }
+        if (minPrice !== undefined || maxPrice !== undefined) {
+          query.rentalPricePerDay = {};
+          if (minPrice !== undefined) query.rentalPricePerDay.$gte = minPrice;
+          if (maxPrice !== undefined) query.rentalPricePerDay.$lte = maxPrice;
+        }
 
-    const skip = (page - 1) * limit;
-    const sortField = sort || "-createdAt";
+        if (search) {
+          query.$text = { $search: search };
+        }
 
-    const [data, total] = await Promise.all([
-      Equipment.find(query)
-        .populate("owner", "firstName lastName email phoneNumber")
-        .sort(sortField)
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Equipment.countDocuments(query),
-    ]);
+        const skip = (page - 1) * limit;
+        const sortField = sort || "-createdAt";
 
-    return { data, total };
+        const [data, total] = await Promise.all([
+          Equipment.find(query)
+            .populate("owner", "firstName lastName email phoneNumber")
+            .sort(sortField)
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+          Equipment.countDocuments(query),
+        ]);
+
+        return { data, total };
+      },
+      CACHE_TTL.EQUIPMENT_LIST,
+    );
   }
 
   static async getEquipmentById(id: string): Promise<IEquipment> {
-    const equipment = await Equipment.findById(id).populate(
-      "owner",
-      "firstName lastName email phoneNumber profileImage",
+    const cacheKey = CacheService.getEquipmentDetailKey(id);
+
+    const equipment = await CacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const result = await Equipment.findById(id).populate(
+          "owner",
+          "firstName lastName email phoneNumber profileImage",
+        );
+
+        if (!result) {
+          throw new AppError("Equipment not found", 404, ERROR_CODES.NOT_FOUND);
+        }
+
+        return result;
+      },
+      CACHE_TTL.EQUIPMENT_DETAIL,
     );
 
-    if (!equipment) {
-      throw new AppError("Equipment not found", 404, ERROR_CODES.NOT_FOUND);
-    }
-
     // Increment view count
-    equipment.viewsCount += 1;
-    await equipment.save({ validateBeforeSave: false });
+    await Equipment.findByIdAndUpdate(id, { $inc: { viewsCount: 1 } });
 
     return equipment;
   }
@@ -214,6 +237,12 @@ export class EquipmentService {
     }
 
     await equipment.save();
+
+    // Invalidate equipment caches
+    await CacheService.delete(CacheService.getEquipmentDetailKey(id));
+    await CacheService.deletePattern("equipment:list:*");
+    await CacheService.delete(CacheService.getCategoriesKey());
+
     return equipment;
   }
 
@@ -232,6 +261,10 @@ export class EquipmentService {
       );
     }
 
+    // Invalidate equipment caches
+    await CacheService.delete(CacheService.getEquipmentDetailKey(id));
+    await CacheService.deletePattern("equipment:list:*");
+
     await equipment.deleteOne();
   }
 
@@ -246,19 +279,25 @@ export class EquipmentService {
   }
 
   static async getCategories(): Promise<string[]> {
-    return [
-      "tractor",
-      "harvester",
-      "plow",
-      "cultivator",
-      "seeder",
-      "sprayer",
-      "irrigation",
-      "baler",
-      "combine",
-      "mower",
-      "other",
-    ];
+    return CacheService.getOrSet(
+      CacheService.getCategoriesKey(),
+      async () => {
+        return [
+          "tractor",
+          "harvester",
+          "plow",
+          "cultivator",
+          "seeder",
+          "sprayer",
+          "irrigation",
+          "baler",
+          "combine",
+          "mower",
+          "other",
+        ];
+      },
+      CACHE_TTL.CATEGORIES,
+    );
   }
 
   static async checkAvailability(
