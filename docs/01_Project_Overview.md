@@ -116,6 +116,13 @@ Authorization: Bearer <JWT_TOKEN>
 - List bookings
 - Audit logs
 
+### 7. Email Service
+
+Responsible for:
+- Email verification on registration
+- Password reset emails
+- Booking confirmation emails
+- Payment receipt emails
 ---
 
 ## User Roles
@@ -178,6 +185,12 @@ Authorization: Bearer <JWT_TOKEN>
 | ERR_TOKEN_EXPIRED | 401 | Token expired |
 | ERR_INTERNAL | 500 | Server error |
 
+---
+### Security Features
+- JWT with refresh token rotation
+- JWT blacklist on logout
+- Password hashing with bcrypt
+- Rate limiting
 ---
 
 ## Frontend Notes
