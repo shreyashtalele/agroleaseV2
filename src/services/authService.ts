@@ -5,6 +5,9 @@ import { AppError } from "../middleware/errorHandler";
 import { ERROR_CODES } from "../middleware/errorHandler";
 import config from "../config/config";
 import redis from "../config/redis";
+import logger from "../config/logger";
+import { EmailService } from "./emailService";
+import crypto from "crypto";
 
 interface RegisterData {
   email: string;
@@ -78,7 +81,41 @@ export class AuthService {
 
     await user.save();
 
+    // Generate verification token
+    const verificationToken = user.generateVerificationToken();
+    await user.save();
+
+    // Send verification email
+    try {
+      await EmailService.sendVerificationEmail(user.email, verificationToken);
+    } catch (error: any) {
+      logger.error(
+        "Failed to send verification email:",
+        error.message || error,
+      );
+    }
+
     return user;
+  }
+
+  static async verifyEmail(token: string): Promise<boolean> {
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({ verificationToken: hashedToken });
+
+    if (!user) {
+      throw new AppError(
+        "Invalid or expired verification token",
+        400,
+        ERROR_CODES.TOKEN_INVALID,
+      );
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    await user.save();
+
+    return true;
   }
 
   static async login(

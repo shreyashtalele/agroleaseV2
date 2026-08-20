@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import config from "../config/config";
+import crypto from "crypto";
 
 export interface IUser extends Document {
   email: string;
@@ -30,6 +31,8 @@ export interface IUser extends Document {
   createdAt?: Date;
   updatedAt?: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  verifyEmail(token: string): boolean;
+  generateVerificationToken(): string;
   generateAuthToken(): string;
   generateRefreshToken(): string;
 }
@@ -146,6 +149,25 @@ UserSchema.methods.comparePassword = async function (
   return bcrypt.compare(candidatePassword, this.password);
 };
 
+UserSchema.methods.verifyEmail = function (token: string): boolean {
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+  if (this.verificationToken === hashedToken) {
+    this.isVerified = true;
+    this.verificationToken = undefined;
+    return true;
+  }
+  return false;
+};
+
+UserSchema.methods.generateVerificationToken = function (): string {
+  const token = crypto.randomBytes(32).toString("hex");
+  this.verificationToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+  return token;
+};
 // Generate JWT token
 UserSchema.methods.generateAuthToken = function (): string {
   const payload = {

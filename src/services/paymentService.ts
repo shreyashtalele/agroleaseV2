@@ -5,6 +5,8 @@ import Booking from "../models/Booking";
 import { AppError } from "../middleware/errorHandler";
 import { ERROR_CODES } from "../middleware/errorHandler";
 import config from "../config/config";
+import { EmailService } from "./emailService";
+import logger from "../config/logger";
 
 interface CreateOrderData {
   bookingId: string;
@@ -137,6 +139,18 @@ export class PaymentService {
         status: "completed",
       };
       await booking.save();
+    }
+
+    // Send payment receipt email
+    try {
+      await payment.populate("user", "email");
+      await booking?.populate("equipment", "title");
+      await EmailService.sendPaymentReceiptEmail(payment, booking);
+    } catch (error: any) {
+      logger.error(
+        "Failed to send payment receipt email:",
+        error.message || error,
+      );
     }
 
     return payment;

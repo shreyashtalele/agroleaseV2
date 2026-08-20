@@ -118,6 +118,8 @@ router.post("/login", loginValidator, AuthController.login);
  *       401:
  *         description: Invalid refresh token
  */
+
+router.get("/verify-email/:token", AuthController.verifyEmail);
 router.post(
   "/refresh-token",
   refreshTokenValidator,

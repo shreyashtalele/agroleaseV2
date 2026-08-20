@@ -109,6 +109,16 @@ export class AuthController {
     }
   }
 
+  static async verifyEmail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const token = req.params.token as string;
+      await AuthService.verifyEmail(token);
+      ResponseHandler.success(res, null, "Email verified successfully");
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getProfile(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user.id;

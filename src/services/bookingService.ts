@@ -5,6 +5,9 @@ import { ERROR_CODES } from "../middleware/errorHandler";
 import mongoose from "mongoose";
 import { NotificationService } from "./notificationService";
 
+import { EmailService } from "./emailService";
+import logger from "../config/logger";
+
 interface CreateBookingData {
   equipmentId: string;
   bookingDateStart: Date;
@@ -278,8 +281,22 @@ export class BookingService {
       { path: "owner", select: "firstName lastName" },
     ]);
 
-    // Create notification for confirmation
+    // Create notification
     await NotificationService.notifyBookingConfirmed(booking);
+
+    // Send email confirmation
+    try {
+      await booking.populate([
+        { path: "renter", select: "email firstName lastName" },
+        { path: "equipment", select: "title" },
+      ]);
+      await EmailService.sendBookingConfirmationEmail(booking);
+    } catch (error: any) {
+      logger.error(
+        "Failed to send booking confirmation email:",
+        error.message || error,
+      );
+    }
 
     return booking;
   }
