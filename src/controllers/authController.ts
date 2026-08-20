@@ -93,8 +93,16 @@ export class AuthController {
       next(error);
     }
   }
-  static async logout(_req: Request, res: Response, next: NextFunction) {
+  static async logout(req: Request, res: Response, next: NextFunction) {
     try {
+      const userId = (req as any).user.id;
+      const authHeader = req.headers.authorization;
+      const token = authHeader?.split(" ")[1];
+
+      if (token) {
+        await AuthService.blacklistToken(userId, token);
+      }
+
       ResponseHandler.success(res, null, "Logged out successfully");
     } catch (error) {
       next(error);

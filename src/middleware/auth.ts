@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import config from "../config/config";
 import { AppError } from "./errorHandler";
 import { ERROR_CODES } from "./errorHandler";
+import redis from "../config/redis";
 
 declare global {
   namespace Express {
@@ -16,7 +17,7 @@ declare global {
   }
 }
 
-export const authenticate = (
+export const authenticate = async (
   req: Request,
   _res: Response,
   next: NextFunction,
@@ -40,6 +41,13 @@ export const authenticate = (
         email: string;
         role: string;
       };
+
+      const blacklistKey = `blacklist:access:${token}`;
+      const client = redis.getClient();
+      const blacklisted = client ? await client.get(blacklistKey) : null;
+      if (blacklisted) {
+        throw new AppError("Token revoked", 401, ERROR_CODES.TOKEN_INVALID);
+      }
 
       req.user = {
         id: decoded.id,

@@ -4,6 +4,7 @@ import User, { IUser } from "../models/User";
 import { AppError } from "../middleware/errorHandler";
 import { ERROR_CODES } from "../middleware/errorHandler";
 import config from "../config/config";
+import redis from "../config/redis";
 
 interface RegisterData {
   email: string;
@@ -20,6 +21,36 @@ interface LoginData {
 }
 
 export class AuthService {
+  static async revokeRefreshToken(
+    userId: string,
+    token: string,
+  ): Promise<void> {
+    const client = redis.getClient();
+    if (client) {
+      const key = `blacklist:refresh:${userId}`;
+      await client.setEx(key, 60 * 60 * 24 * 30, token);
+    }
+  }
+
+  static async isRefreshTokenRevoked(
+    userId: string,
+    token: string,
+  ): Promise<boolean> {
+    const client = redis.getClient();
+    if (!client) return false;
+    const key = `blacklist:refresh:${userId}`;
+    const stored = await client.get(key);
+    return stored === token;
+  }
+
+  static async blacklistToken(_userId: string, token: string): Promise<void> {
+    const client = redis.getClient();
+    if (client) {
+      const key = `blacklist:access:${token}`;
+      await client.setEx(key, 60 * 60 * 24 * 7, "true");
+    }
+  }
+
   static async register(data: RegisterData): Promise<IUser> {
     const existingUser = await User.findOne({
       $or: [{ email: data.email }, { phoneNumber: data.phoneNumber }],
@@ -109,8 +140,20 @@ export class AuthService {
   ): Promise<{ token: string; refreshToken: string }> {
     try {
       const decoded: any = jwt.verify(refreshToken, config.jwt.refreshSecret);
-      const user = await User.findById(decoded.id);
 
+      const revoked = await this.isRefreshTokenRevoked(
+        decoded.id,
+        refreshToken,
+      );
+      if (revoked) {
+        throw new AppError(
+          "Refresh token revoked",
+          401,
+          ERROR_CODES.TOKEN_INVALID,
+        );
+      }
+
+      const user = await User.findById(decoded.id);
       if (!user || !user.isActive) {
         throw new AppError(
           "Invalid refresh token",
@@ -118,6 +161,8 @@ export class AuthService {
           ERROR_CODES.TOKEN_INVALID,
         );
       }
+
+      await this.revokeRefreshToken(decoded.id, refreshToken);
 
       const newToken = user.generateAuthToken();
       const newRefreshToken = user.generateRefreshToken();
