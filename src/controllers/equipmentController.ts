@@ -3,6 +3,7 @@ import { validationResult } from "express-validator";
 import { EquipmentService } from "../services/equipmentService";
 import { AppError } from "../middleware/errorHandler";
 import ResponseHandler from "../utils/responseHandler";
+import { FileService } from "../services/fileService";
 
 export class EquipmentController {
   static async createEquipment(
@@ -25,8 +26,28 @@ export class EquipmentController {
       if (!userId) {
         throw new AppError("User not authenticated", 401, "ERR_UNAUTHORIZED");
       }
+
+      // Handle image uploads to Cloudinary
+      const files = (req as any).files || [];
+      const imageUrls = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const result = await FileService.uploadToCloudinary(files[i]);
+        imageUrls.push({
+          url: result.url,
+          publicId: result.publicId,
+          isPrimary: i === 0,
+          uploadedAt: new Date(),
+        });
+      }
+
+      const equipmentData = {
+        ...req.body,
+        images: imageUrls,
+      };
+
       const equipment = await EquipmentService.createEquipment(
-        req.body,
+        equipmentData,
         userId,
       );
 
@@ -140,6 +161,19 @@ export class EquipmentController {
       if (!userId) {
         throw new AppError("User not authenticated", 401, "ERR_UNAUTHORIZED");
       }
+
+      // Get equipment to access images
+      const equipment = await EquipmentService.getEquipmentById(id);
+
+      // Delete images from Cloudinary
+      if (equipment.images && equipment.images.length > 0) {
+        for (const image of equipment.images) {
+          if (image.publicId) {
+            await FileService.deleteFromCloudinary(image.publicId);
+          }
+        }
+      }
+
       await EquipmentService.deleteEquipment(id, userId);
 
       ResponseHandler.success(res, null, "Equipment deleted successfully");

@@ -32,6 +32,9 @@ export interface IEquipment extends Document {
       height?: number;
     };
   };
+  condition?: "excellent" | "good" | "fair" | "needs_repair";
+  manufactureYear?: number;
+  usageHours?: number;
   images: Array<{
     url: string;
     publicId?: string;
@@ -136,6 +139,21 @@ const EquipmentSchema = new Schema<IEquipment>(
         width: Number,
         height: Number,
       },
+    },
+    condition: {
+      type: String,
+      enum: ["excellent", "good", "fair", "needs_repair"],
+      default: "good",
+    },
+    manufactureYear: {
+      type: Number,
+      min: 1900,
+      max: new Date().getFullYear(),
+    },
+    usageHours: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     images: [
       {

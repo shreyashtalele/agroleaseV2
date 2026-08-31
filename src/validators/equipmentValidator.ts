@@ -83,6 +83,23 @@ export const createEquipmentValidator = [
     .isIn(["diesel", "electric", "manual", "solar", "petrol"])
     .withMessage("Invalid power source"),
 
+  body("condition")
+    .optional()
+    .isIn(["excellent", "good", "fair", "needs_repair"])
+    .withMessage("Invalid condition"),
+
+  body("manufactureYear")
+    .optional()
+    .isInt({ min: 1900, max: new Date().getFullYear() })
+    .withMessage(
+      `Manufacture year must be between 1900 and ${new Date().getFullYear()}`,
+    ),
+
+  body("usageHours")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Usage hours must be a positive number"),
+
   body("availableFrom")
     .optional()
     .isISO8601()
@@ -167,6 +184,23 @@ export const updateEquipmentValidator = [
     .optional()
     .isLength({ min: 5, max: 6 })
     .withMessage("Pincode must be 5-6 characters"),
+
+  body("condition")
+    .optional()
+    .isIn(["excellent", "good", "fair", "needs_repair"])
+    .withMessage("Invalid condition"),
+
+  body("manufactureYear")
+    .optional()
+    .isInt({ min: 1900, max: new Date().getFullYear() })
+    .withMessage(
+      `Manufacture year must be between 1900 and ${new Date().getFullYear()}`,
+    ),
+
+  body("usageHours")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Usage hours must be a positive number"),
 ];
 
 export const listEquipmentValidator = [

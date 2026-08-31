@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { EquipmentController } from "../controllers/equipmentController";
+import { uploadMultiple } from "../middleware/upload";
 import {
   createEquipmentValidator,
   updateEquipmentValidator,
@@ -199,6 +200,7 @@ router.get("/:id/availability", EquipmentController.checkAvailability);
 router.post(
   "/",
   authenticate,
+  uploadMultiple,
   createEquipmentValidator,
   EquipmentController.createEquipment,
 );
