@@ -121,7 +121,10 @@ export class BookingService {
 
     await booking.save();
 
-    // Populate equipment and user details
+    await Booking.findByIdAndUpdate(booking._id, {
+      expiresAt: new Date(Date.now() + 1 * 60 * 1000),
+    });
+
     await booking.populate([
       {
         path: "equipment",

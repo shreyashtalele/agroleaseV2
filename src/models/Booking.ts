@@ -40,6 +40,7 @@ export interface IBooking extends Document {
   completedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  expiresAt?: Date;
   durationInDays: number;
 }
 
@@ -95,6 +96,7 @@ const BookingSchema = new Schema<IBooking>(
     },
     acceptedAt: Date,
     rejectedAt: Date,
+    expiresAt: Date,
     paymentDeadline: Date,
     payment: {
       razorpayOrderId: String,

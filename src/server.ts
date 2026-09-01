@@ -3,6 +3,7 @@ import config from "./config/config";
 import logger from "./config/logger";
 import database from "./config/database";
 import redis from "./config/redis";
+import { CronService } from "./services/cronService";
 
 let server: any = null;
 
@@ -22,6 +23,7 @@ const gracefulShutdown = async () => {
 const startServer = async () => {
   try {
     await database.connect();
+    CronService.start();
     await redis.connect().catch(() => {
       logger.warn("Redis connection failed, continuing without cache");
     });
