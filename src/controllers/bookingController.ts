@@ -141,4 +141,35 @@ export class BookingController {
       next(error);
     }
   }
+
+  static async acceptBooking(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string;
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        throw new AppError("User not authenticated", 401, "ERR_UNAUTHORIZED");
+      }
+
+      const booking = await BookingService.acceptBooking(id, userId);
+      ResponseHandler.success(res, booking, "Booking accepted successfully");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async rejectBooking(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string;
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        throw new AppError("User not authenticated", 401, "ERR_UNAUTHORIZED");
+      }
+
+      const { reason } = req.body;
+      const booking = await BookingService.rejectBooking(id, userId, reason);
+      ResponseHandler.success(res, booking, "Booking rejected successfully");
+    } catch (error) {
+      next(error);
+    }
+  }
 }

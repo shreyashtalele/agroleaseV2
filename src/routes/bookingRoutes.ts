@@ -227,5 +227,7 @@ router.put("/:id/confirm", BookingController.confirmBooking);
  *         description: Booking cannot be completed
  */
 router.put("/:id/complete", BookingController.completeBooking);
+router.put("/:id/accept", authenticate, BookingController.acceptBooking);
+router.put("/:id/reject", authenticate, BookingController.rejectBooking);
 
 export default router;

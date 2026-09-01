@@ -9,7 +9,18 @@ export interface IBooking extends Document {
   totalPrice: number;
   securityDeposit: number;
   status:
-    "pending" | "confirmed" | "active" | "completed" | "cancelled" | "failed";
+    | "pending"
+    | "accepted"
+    | "rejected"
+    | "payment_pending"
+    | "confirmed"
+    | "active"
+    | "completed"
+    | "cancelled"
+    | "failed";
+  acceptedAt?: Date;
+  rejectedAt?: Date;
+  paymentDeadline?: Date;
   payment: {
     razorpayOrderId?: string;
     razorpayPaymentId?: string;
@@ -71,6 +82,9 @@ const BookingSchema = new Schema<IBooking>(
       type: String,
       enum: [
         "pending",
+        "accepted",
+        "rejected",
+        "payment_pending",
         "confirmed",
         "active",
         "completed",
@@ -79,6 +93,9 @@ const BookingSchema = new Schema<IBooking>(
       ],
       default: "pending",
     },
+    acceptedAt: Date,
+    rejectedAt: Date,
+    paymentDeadline: Date,
     payment: {
       razorpayOrderId: String,
       razorpayPaymentId: String,

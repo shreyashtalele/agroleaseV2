@@ -4,6 +4,8 @@ export interface INotification extends Document {
   user: mongoose.Types.ObjectId;
   type:
     | "booking_created"
+    | "booking_accepted"
+    | "booking_rejected"
     | "booking_confirmed"
     | "booking_cancelled"
     | "booking_completed"
@@ -34,6 +36,8 @@ const NotificationSchema = new Schema<INotification>(
       type: String,
       enum: [
         "booking_created",
+        "booking_accepted",
+        "booking_rejected",
         "booking_confirmed",
         "booking_cancelled",
         "booking_completed",

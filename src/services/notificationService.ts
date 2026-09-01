@@ -119,6 +119,51 @@ export class NotificationService {
     }
   }
 
+  static async notifyBookingAccepted(booking: any): Promise<void> {
+    const renterId = booking.renter._id || booking.renter;
+    const ownerId = booking.owner._id || booking.owner;
+
+    // Notify renter
+    await this.create({
+      userId: renterId.toString(),
+      type: "booking_accepted",
+      title: "Booking Accepted",
+      message: `Your booking for ${booking.equipment.title} has been accepted by ${booking.owner.firstName}. Please complete payment within 24 hours.`,
+      actionUrl: `/bookings/${booking._id}`,
+      metadata: { bookingId: booking._id },
+    });
+
+    // Notify owner
+    await this.create({
+      userId: ownerId.toString(),
+      type: "booking_accepted",
+      title: "Booking Accepted",
+      message: `You have accepted the booking for ${booking.equipment.title}.`,
+      actionUrl: `/bookings/${booking._id}`,
+      metadata: { bookingId: booking._id },
+    });
+  }
+
+  static async notifyBookingRejected(
+    booking: any,
+    reason?: string,
+  ): Promise<void> {
+    const renterId = booking.renter._id || booking.renter;
+
+    const message = reason
+      ? `Your booking for ${booking.equipment.title} was rejected. Reason: ${reason}`
+      : `Your booking for ${booking.equipment.title} was rejected.`;
+
+    await this.create({
+      userId: renterId.toString(),
+      type: "booking_rejected",
+      title: "Booking Rejected",
+      message,
+      actionUrl: `/equipment/${booking.equipment._id}`,
+      metadata: { bookingId: booking._id },
+    });
+  }
+
   static async notifyBookingConfirmed(booking: any): Promise<void> {
     const renterId = booking.renter._id || booking.renter;
 

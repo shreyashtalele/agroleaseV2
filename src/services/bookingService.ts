@@ -243,6 +243,89 @@ export class BookingService {
     return booking;
   }
 
+  static async acceptBooking(id: string, ownerId: string): Promise<IBooking> {
+    const booking = await Booking.findById(id);
+
+    if (!booking) {
+      throw new AppError("Booking not found", 404, ERROR_CODES.NOT_FOUND);
+    }
+
+    if (booking.owner.toString() !== ownerId) {
+      throw new AppError(
+        "You are not authorized to accept this booking",
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+
+    if (booking.status !== "pending") {
+      throw new AppError(
+        `Booking cannot be accepted (status: ${booking.status})`,
+        400,
+        ERROR_CODES.BOOKING_CONFLICT,
+      );
+    }
+
+    booking.status = "accepted";
+    booking.acceptedAt = new Date();
+    booking.paymentDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await booking.save();
+
+    await booking.populate([
+      { path: "equipment", select: "title" },
+      { path: "renter", select: "firstName lastName email" },
+      { path: "owner", select: "firstName lastName" },
+    ]);
+
+    await NotificationService.notifyBookingAccepted(booking);
+
+    return booking;
+  }
+
+  static async rejectBooking(
+    id: string,
+    ownerId: string,
+    reason?: string,
+  ): Promise<IBooking> {
+    const booking = await Booking.findById(id);
+
+    if (!booking) {
+      throw new AppError("Booking not found", 404, ERROR_CODES.NOT_FOUND);
+    }
+
+    if (booking.owner.toString() !== ownerId) {
+      throw new AppError(
+        "You are not authorized to reject this booking",
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+
+    if (booking.status !== "pending") {
+      throw new AppError(
+        `Booking cannot be rejected (status: ${booking.status})`,
+        400,
+        ERROR_CODES.BOOKING_CONFLICT,
+      );
+    }
+
+    booking.status = "rejected";
+    booking.rejectedAt = new Date();
+
+    await booking.save();
+
+    await booking.populate([
+      { path: "equipment", select: "title" },
+      { path: "renter", select: "firstName lastName email" },
+      { path: "owner", select: "firstName lastName" },
+    ]);
+
+    await NotificationService.notifyBookingRejected(booking, reason);
+
+    return booking;
+  }
+
   static async confirmBooking(id: string, ownerId: string): Promise<IBooking> {
     const booking = await Booking.findById(id);
 
