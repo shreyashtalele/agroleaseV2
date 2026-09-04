@@ -26,6 +26,10 @@ export interface IBooking extends Document {
   inspectionNotes?: string;
   isDamaged?: boolean;
   damageDescription?: string;
+  cancelledBy?: string; // 'farmer' | 'owner' | 'system'
+  refundAmount?: number;
+  refundStatus?: "pending" | "processed" | "failed";
+  refundId?: string;
   payment: {
     razorpayOrderId?: string;
     razorpayPaymentId?: string;
@@ -108,6 +112,14 @@ const BookingSchema = new Schema<IBooking>(
     inspectionNotes: String,
     isDamaged: { type: Boolean, default: false },
     damageDescription: String,
+    cancelledBy: String,
+    refundAmount: Number,
+    refundStatus: {
+      type: String,
+      enum: ["pending", "processed", "failed"],
+      default: "pending",
+    },
+    refundId: String,
     payment: {
       razorpayOrderId: String,
       razorpayPaymentId: String,

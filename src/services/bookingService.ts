@@ -4,6 +4,7 @@ import { AppError } from "../middleware/errorHandler";
 import { ERROR_CODES } from "../middleware/errorHandler";
 import mongoose from "mongoose";
 import { NotificationService } from "./notificationService";
+import { RefundService } from "./refundService";
 
 import { EmailService } from "./emailService";
 import logger from "../config/logger";
@@ -122,7 +123,7 @@ export class BookingService {
     await booking.save();
 
     await Booking.findByIdAndUpdate(booking._id, {
-      expiresAt: new Date(Date.now() + 1 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
 
     await booking.populate([
@@ -210,7 +211,6 @@ export class BookingService {
       throw new AppError("Booking not found", 404, ERROR_CODES.NOT_FOUND);
     }
 
-    // Check if user is renter or owner
     if (
       booking.renter.toString() !== userId &&
       booking.owner.toString() !== userId
@@ -222,7 +222,6 @@ export class BookingService {
       );
     }
 
-    // Check if booking can be cancelled
     if (["completed", "cancelled", "failed"].includes(booking.status)) {
       throw new AppError(
         `Booking cannot be cancelled (status: ${booking.status})`,
@@ -231,10 +230,19 @@ export class BookingService {
       );
     }
 
+    if (booking.status === "completed") {
+      throw new AppError(
+        "Booking is already completed and cannot be cancelled",
+        400,
+        ERROR_CODES.BOOKING_CONFLICT,
+      );
+    }
+
+    booking.cancelledBy =
+      userId === booking.renter.toString() ? "farmer" : "owner";
     booking.status = "cancelled";
     booking.cancellationReason = reason || "Cancelled by user";
     booking.cancelledAt = new Date();
-
     await booking.save();
 
     // Return equipment quantity
@@ -242,7 +250,11 @@ export class BookingService {
       $inc: { quantity: 1 },
     });
 
+    // Process refund
+    await RefundService.processRefund(id, booking.cancelledBy);
+
     await NotificationService.notifyBookingCancelled(booking, userId);
+
     return booking;
   }
 
