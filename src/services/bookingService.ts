@@ -344,7 +344,7 @@ export class BookingService {
       );
     }
 
-    if (booking.status !== "pending") {
+    if (booking.status !== "accepted" && booking.status !== "pending") {
       throw new AppError(
         `Booking cannot be confirmed (status: ${booking.status})`,
         400,
@@ -447,5 +447,107 @@ export class BookingService {
       type: "owner",
       userId,
     });
+  }
+
+  static async returnEquipment(id: string, ownerId: string): Promise<IBooking> {
+    const booking = await Booking.findById(id);
+
+    if (!booking) {
+      throw new AppError("Booking not found", 404, ERROR_CODES.NOT_FOUND);
+    }
+
+    if (booking.owner.toString() !== ownerId) {
+      throw new AppError(
+        "You are not authorized to return this equipment",
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+
+    if (booking.status !== "active") {
+      throw new AppError(
+        `Booking cannot be returned (status: ${booking.status})`,
+        400,
+        ERROR_CODES.BOOKING_CONFLICT,
+      );
+    }
+
+    booking.returnedAt = new Date();
+    await booking.save();
+
+    return booking;
+  }
+
+  static async inspectEquipment(
+    id: string,
+    ownerId: string,
+    data: {
+      inspectionNotes?: string;
+      isDamaged?: boolean;
+      damageDescription?: string;
+    },
+  ): Promise<IBooking> {
+    const booking = await Booking.findById(id);
+
+    if (!booking) {
+      throw new AppError("Booking not found", 404, ERROR_CODES.NOT_FOUND);
+    }
+
+    if (booking.owner.toString() !== ownerId) {
+      throw new AppError(
+        "You are not authorized to inspect this equipment",
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+
+    if (booking.status !== "active") {
+      throw new AppError(
+        `Booking cannot be inspected (status: ${booking.status})`,
+        400,
+        ERROR_CODES.BOOKING_CONFLICT,
+      );
+    }
+
+    booking.inspectedAt = new Date();
+    booking.inspectionNotes = data.inspectionNotes;
+    booking.isDamaged = data.isDamaged || false;
+    booking.damageDescription = data.damageDescription;
+
+    // Auto-complete if no damage
+    if (!booking.isDamaged) {
+      booking.status = "completed";
+      booking.completedAt = new Date();
+    }
+
+    await booking.save();
+
+    return booking;
+  }
+
+  static async releaseDeposit(id: string, ownerId: string): Promise<IBooking> {
+    const booking = await Booking.findById(id);
+
+    if (!booking) {
+      throw new AppError("Booking not found", 404, ERROR_CODES.NOT_FOUND);
+    }
+
+    if (booking.owner.toString() !== ownerId) {
+      throw new AppError(
+        "You are not authorized to release deposit",
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+
+    if (booking.status === "completed") {
+      return booking;
+    }
+
+    booking.status = "completed";
+    booking.completedAt = new Date();
+    await booking.save();
+
+    return booking;
   }
 }

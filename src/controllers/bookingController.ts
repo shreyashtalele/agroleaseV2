@@ -172,4 +172,62 @@ export class BookingController {
       next(error);
     }
   }
+
+  static async returnEquipment(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const id = req.params.id as string;
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        throw new AppError("User not authenticated", 401, "ERR_UNAUTHORIZED");
+      }
+
+      const booking = await BookingService.returnEquipment(id, userId);
+      ResponseHandler.success(res, booking, "Equipment returned successfully");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async inspectEquipment(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const id = req.params.id as string;
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        throw new AppError("User not authenticated", 401, "ERR_UNAUTHORIZED");
+      }
+
+      const { inspectionNotes, isDamaged, damageDescription } = req.body;
+      const booking = await BookingService.inspectEquipment(id, userId, {
+        inspectionNotes,
+        isDamaged,
+        damageDescription,
+      });
+      ResponseHandler.success(res, booking, "Inspection completed");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async releaseDeposit(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string;
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        throw new AppError("User not authenticated", 401, "ERR_UNAUTHORIZED");
+      }
+
+      const booking = await BookingService.releaseDeposit(id, userId);
+      ResponseHandler.success(res, booking, "Deposit released successfully");
+    } catch (error) {
+      next(error);
+    }
+  }
 }

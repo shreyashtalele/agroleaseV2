@@ -230,4 +230,12 @@ router.put("/:id/complete", BookingController.completeBooking);
 router.put("/:id/accept", authenticate, BookingController.acceptBooking);
 router.put("/:id/reject", authenticate, BookingController.rejectBooking);
 
+router.put("/:id/return", authenticate, BookingController.returnEquipment);
+router.put("/:id/inspect", authenticate, BookingController.inspectEquipment);
+router.put(
+  "/:id/release-deposit",
+  authenticate,
+  BookingController.releaseDeposit,
+);
+
 export default router;

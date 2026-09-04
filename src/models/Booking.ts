@@ -21,6 +21,11 @@ export interface IBooking extends Document {
   acceptedAt?: Date;
   rejectedAt?: Date;
   paymentDeadline?: Date;
+  returnedAt?: Date;
+  inspectedAt?: Date;
+  inspectionNotes?: string;
+  isDamaged?: boolean;
+  damageDescription?: string;
   payment: {
     razorpayOrderId?: string;
     razorpayPaymentId?: string;
@@ -98,6 +103,11 @@ const BookingSchema = new Schema<IBooking>(
     rejectedAt: Date,
     expiresAt: Date,
     paymentDeadline: Date,
+    returnedAt: Date,
+    inspectedAt: Date,
+    inspectionNotes: String,
+    isDamaged: { type: Boolean, default: false },
+    damageDescription: String,
     payment: {
       razorpayOrderId: String,
       razorpayPaymentId: String,
